@@ -1,4 +1,4 @@
-kpipeline {
+pipeline {
     agent any
     stages {
         stage('Build') {
@@ -37,10 +37,12 @@ kpipeline {
                         exit 1
                     fi
 
-                    # Compile test files
+                    # Compile test files (test folder beside src)
                     mkdir -p test-build
                     if [ -d test ]; then
                         javac -cp junit-platform-console-standalone.jar:build -d test-build test/*.java
+                    else
+                        echo "No test directory found, skipping test compilation."
                     fi
 
                     # Run JUnit tests only if compiled
@@ -48,7 +50,7 @@ kpipeline {
                         java -jar junit-platform-console-standalone.jar --class-path build:test-build --scan-class-path
                         echo "JUnit tests executed successfully"
                     else
-                        echo "No test classes found, skipping test execution"
+                        echo "No test classes found, skipping test execution."
                     fi
                 '''
             }
