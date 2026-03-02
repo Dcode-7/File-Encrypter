@@ -1,4 +1,4 @@
-pipeline {
+kpipeline {
     agent any
     stages {
         stage('Build') {
@@ -20,12 +20,21 @@ pipeline {
                 sh '''
                     echo "Running JUnit tests for File-Encrypter..."
                     cd "Password Protection"
-                    
+
+                    # Clean up old JUnit jar if it exists
+                    rm -f junit-platform-console-standalone.jar
+
                     # Download JUnit jar if not already present
                     if [ ! -f junit-platform-console-standalone.jar ]; then
                         echo "Downloading JUnit..."
                         curl -L -o junit-platform-console-standalone.jar \
                         https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
+                    fi
+
+                    # Check if JUnit jar was downloaded successfully
+                    if [ ! -f junit-platform-console-standalone.jar ]; then
+                        echo "JUnit jar download failed. Exiting pipeline."
+                        exit 1
                     fi
 
                     # Compile test files
