@@ -1,76 +1,69 @@
 node {
     try {
+
         stage('Build') {
-            steps {
-                sh '''
-                    echo "Building Java project..."
-                    echo "Listing workspace contents:"
-                    ls
-                    cd "Password Protection"
-                    mkdir -p build
-                    javac -d build src/*.java
-                    echo "Build successful"
-                '''
-            }
+            sh '''
+            set -e
+            echo "Building Java project..."
+            echo "Listing workspace contents:"
+            ls
+
+            cd "Password Protection"
+
+            mkdir -p build
+
+            javac -d build src/*.java
+
+            echo "Build successful"
+            '''
         }
 
         stage('Test') {
-            steps {
-                sh '''
-                    echo "Running JUnit tests for File-Encrypter..."
-                    cd "Password Protection"
+            sh '''
+            set -e
+            echo "Running JUnit tests for File-Encrypter..."
 
-                    # Clean up old JUnit jar if it exists
-                    rm -f junit-platform-console-standalone.jar
+            cd "Password Protection"
 
-                    # Download JUnit jar if not already present
-                    if [ ! -f junit-platform-console-standalone.jar ]; then
-                        echo "Downloading JUnit..."
-                        curl -L -o junit-platform-console-standalone.jar \
-                        https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
-                    fi
+            # Always remove old/corrupted jar
+            rm -f junit-platform-console-standalone.jar
 
-                    # Check if JUnit jar was downloaded successfully
-                    if [ ! -f junit-platform-console-standalone.jar ]; then
-                        echo "JUnit jar download failed. Exiting pipeline."
-                        exit 1
-                    fi
+            echo "Downloading JUnit..."
+            curl -L -o junit-platform-console-standalone.jar \
+            https://repo1.maven.org/maven2/org/junit/platform/junit-platform-console-standalone/1.10.0/junit-platform-console-standalone-1.10.0.jar
 
-                    # Compile test files (test folder beside src)
-                    mkdir -p test-build
-                    if [ -d test ]; then
-                        javac -cp junit-platform-console-standalone.jar:build -d test-build test/*.java
-                    else
-                        echo "No test directory found, skipping test compilation."
-                    fi
+            mkdir -p test-build
 
-                    # Run JUnit tests only if compiled
-                    if [ "$(ls -A test-build 2>/dev/null)" ]; then
-                        java -jar junit-platform-console-standalone.jar --class-path build:test-build --scan-class-path
-                        echo "JUnit tests executed successfully"
-                    else
-                        echo "No test classes found, skipping test execution."
-                    fi
-                '''
-            }
+            # Compile test files
+            javac -cp junit-platform-console-standalone.jar:build -d test-build test/*.java
+
+            # Run tests
+            java -jar junit-platform-console-standalone.jar \
+            --class-path build:test-build \
+            --scan-class-path
+
+            echo "JUnit tests executed successfully"
+            '''
         }
 
         stage('Deploy') {
-            steps {
-                sh '''
-                    echo "Deploying (Packaging) File-Encrypter Application..."
-                    cd "Password Protection"
-                    # Create executable artifact (JAR)
-                    jar cf FileEncrypter.jar -C build .
-                    echo "Deployment successful - Artifact ready"
-                '''
-            }
+            sh '''
+            set -e
+            echo "Deploying (Packaging) File-Encrypter Application..."
+
+            cd "Password Protection"
+
+            jar cf FileEncrypter.jar -C build .
+
+            echo "Deployment successful - Artifact ready"
+            '''
         }
-        
+
         echo "Pipeline executed successfully!"
-        
+
     } catch (Exception e) {
         echo "Pipeline failed!"
         throw e
     }
 }
+
